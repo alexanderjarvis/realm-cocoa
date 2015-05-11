@@ -887,19 +887,24 @@ public:
     KVOLinkObject2 *obj = [self createLinkObject];
     KVOLinkObject2 *obj2 = [self createLinkObject];
     [obj.array addObject:obj.obj];
+    [obj.array addObject:obj.obj];
     [obj.array addObject:obj2.obj];
+
     KVORecorder r(self, obj, @"array");
     [self.realm deleteObjects:[KVOLinkObject1 allObjectsInRealm:self.realm]];
-    AssertIndexChange(NSKeyValueChangeRemoval, ([NSIndexSet indexSetWithIndexesInRange:{0, 2}]));
+    AssertIndexChange(NSKeyValueChangeRemoval, ([NSIndexSet indexSetWithIndexesInRange:{0, 3}]));
 }
 
 - (void)testDeleteObjectsInArrayViaQueryClear {
     KVOLinkObject2 *obj = [self createLinkObject];
-    KVOLinkObject1 *linked = obj.obj;
-    [obj.array addObject:linked];
+    KVOLinkObject2 *obj2 = [self createLinkObject];
+    [obj.array addObject:obj.obj];
+    [obj.array addObject:obj.obj];
+    [obj.array addObject:obj2.obj];
+
     KVORecorder r(self, obj, @"array");
     [self.realm deleteObjects:[KVOLinkObject1 objectsInRealm:self.realm where:@"TRUEPREDICATE"]];
-    AssertIndexChange(NSKeyValueChangeRemoval, ([NSIndexSet indexSetWithIndexesInRange:{0, 2}]));
+    AssertIndexChange(NSKeyValueChangeRemoval, ([NSIndexSet indexSetWithIndexesInRange:{0, 3}]));
 }
 
 @end

@@ -582,7 +582,12 @@ void RLMTrackDeletions(unretained<RLMRealm> realm, dispatch_block_t block) {
                             arrayChanges.push_back({observer, name, [NSMutableIndexSet new]});
                             c = &arrayChanges.back();
                         }
-                        [c->indexes addIndex:linkview->find(link.origin_row_ndx)];
+
+                        size_t start = 0, index;
+                        while ((index = linkview->find(link.old_target_row_ndx, start)) != realm::not_found) {
+                            [c->indexes addIndex:index];
+                            start = index + 1;
+                        }
                     }
                     break;
                }

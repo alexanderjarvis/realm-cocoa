@@ -770,15 +770,23 @@ public:
             if (!o->linkviewChangeIndexes) {
                 o->linkviewChangeIndexes = [NSMutableIndexSet indexSetWithIndex:index];
                 o->linkviewChangeKind = kind;
+                o->changed = true;
             }
             else if (o->linkviewChangeKind == kind) {
+                if (kind == NSKeyValueChangeRemoval) {
+                    NSUInteger i = [o->linkviewChangeIndexes firstIndex];
+                    while (i <= index) {
+                        ++index;
+                        i = [o->linkviewChangeIndexes indexGreaterThanIndex:i];
+                    }
+                }
+                // FIXME: also adjust for addition?
                 [o->linkviewChangeIndexes addIndex:index];
             }
             else {
                 o->multipleLinkviewChanges = false;
                 o->linkviewChangeIndexes = nil;
             }
-            o->changed = true;
         }
 
     }
@@ -814,6 +822,8 @@ public:
                 o->linkviewChangeKind = NSKeyValueChangeRemoval;
             }
             else if (o->linkviewChangeKind == NSKeyValueChangeRemoval) {
+                // FIXME: not tested
+                range.length += [o->linkviewChangeIndexes count];
                 [o->linkviewChangeIndexes addIndexesInRange:range];
             }
             else {

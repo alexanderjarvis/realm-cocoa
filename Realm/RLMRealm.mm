@@ -669,7 +669,9 @@ struct ObserverState {
     __unsafe_unretained RLMObservable *observable;
 
     bool changed = false;
-    std::vector<std::pair<NSKeyValueChange, NSMutableIndexSet *>> linkview_changes;
+    bool multipleLinkviewChanges = false;
+    NSKeyValueChange linkviewChangeKind = NSKeyValueChangeSetting;
+    NSMutableIndexSet *linkviewChangeIndexes;
 };
 
 class ModifiedRowParser {
@@ -686,11 +688,12 @@ public:
                 [o.observable willChangeValueForKey:@"invalidated"];
             if (!o.changed)
                 continue;
-            if (o.linkview_changes.size() != 1)
+
+            if (!o.linkviewChangeIndexes)
                 [o.observable willChangeValueForKey:o.key];
             else
-                [o.observable willChange:o.linkview_changes[0].first
-                         valuesAtIndexes:o.linkview_changes[0].second
+                [o.observable willChange:o.linkviewChangeKind
+                         valuesAtIndexes:o.linkviewChangeIndexes
                                   forKey:o.key];
         }
     }
@@ -762,10 +765,19 @@ public:
 
     void append_link_list_change(NSKeyValueChange kind, NSUInteger index) {
         if (ObserverState *o = active_linklist) {
-            if (o->linkview_changes.empty() || o->linkview_changes.back().first != kind) {
-                o->linkview_changes.push_back(std::make_pair(kind, [NSMutableIndexSet new]));
+            if (o->multipleLinkviewChanges)
+                return;
+            if (!o->linkviewChangeIndexes) {
+                o->linkviewChangeIndexes = [NSMutableIndexSet indexSetWithIndex:index];
+                o->linkviewChangeKind = kind;
             }
-            [o->linkview_changes.back().second addIndex:index];
+            else if (o->linkviewChangeKind == kind) {
+                [o->linkviewChangeIndexes addIndex:index];
+            }
+            else {
+                o->multipleLinkviewChanges = false;
+                o->linkviewChangeIndexes = nil;
+            }
             o->changed = true;
         }
 
@@ -793,13 +805,20 @@ public:
 
     bool link_list_clear() {
         if (ObserverState *o = active_linklist) {
+            if (o->multipleLinkviewChanges)
+                return true;
+
             auto range = NSMakeRange(0, o->observable->_row.get_linklist(o->column)->size());
-            if (o->linkview_changes.empty() || o->linkview_changes.back().first != NSKeyValueChangeRemoval) {
-                o->linkview_changes.push_back({NSKeyValueChangeRemoval,
-                    [NSMutableIndexSet indexSetWithIndexesInRange:range]});
+            if (!o->linkviewChangeIndexes) {
+                o->linkviewChangeIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:range];
+                o->linkviewChangeKind = NSKeyValueChangeRemoval;
+            }
+            else if (o->linkviewChangeKind == NSKeyValueChangeRemoval) {
+                [o->linkviewChangeIndexes addIndexesInRange:range];
             }
             else {
-                [o->linkview_changes.back().second addIndexesInRange:range];
+                o->multipleLinkviewChanges = false;
+                o->linkviewChangeIndexes = nil;
             }
             o->changed = true;
         }
@@ -881,12 +900,12 @@ static void advance_notify(SharedGroup *sg, RLMSchema *schema) {
             [o.observable didChangeValueForKey:@"invalidated"];
         if (!o.changed)
             continue;
-        if (o.linkview_changes.size() != 1)
+        if (!o.linkviewChangeIndexes)
             [o.observable didChangeValueForKey:o.key];
         else
-            [o.observable didChange:o.linkview_changes[0].first
-                  valuesAtIndexes:o.linkview_changes[0].second
-                           forKey:o.key];
+            [o.observable didChange:o.linkviewChangeKind
+                     valuesAtIndexes:o.linkviewChangeIndexes
+                              forKey:o.key];
     }
 }
 

@@ -209,8 +209,9 @@ public:
         _shutdownReadFd = pipeFd[0];
         _shutdownWriteFd = pipeFd[1];
 
+        __weak RLMNotifier *weakSelf = self
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            [self listen];
+            [weakSelf listen];
         });
     }
     return self;

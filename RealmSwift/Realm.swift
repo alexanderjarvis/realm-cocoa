@@ -536,6 +536,13 @@ public final class Realm {
     internal init(_ rlmRealm: RLMRealm) {
         self.rlmRealm = rlmRealm
     }
+
+    //
+
+    deinit {
+        println("deinit")
+        self.rlmRealm.notifier.stop()
+    }
 }
 
 // MARK: Equatable

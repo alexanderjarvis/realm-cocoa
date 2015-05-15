@@ -540,7 +540,6 @@ public final class Realm {
     //
 
     deinit {
-        println("deinit")
         self.rlmRealm.notifier.stop()
     }
 }

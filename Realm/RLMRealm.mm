@@ -424,9 +424,9 @@ static id RLMAutorelease(id value) {
 
     if (!readonly) {
         //realm.notifier = [[RLMNotifier alloc] initWithRealm:realm error:outError];
-        if (!realm.notifier) {
-            return nil;
-        }
+//        if (!realm.notifier) {
+//            return nil;
+//        }
     }
 
     return RLMAutorelease(realm);
